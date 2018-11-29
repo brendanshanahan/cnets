@@ -3,8 +3,7 @@ import networkx as nx
 from tqdm import tqdm
 from graphs.graphs import *
 import matplotlib.pyplot as plt
-
-import pdb
+# import pdb
 
 
 def relax(graph, node, laplacian, t):
@@ -29,23 +28,16 @@ def wave_equation(graph, n, c=0.1):
     :return:
     """
 
-    # graph state should not be initialized yet
-    try:
-        assert graph.state is None
-    except AssertionError:
-        print("Graph already initialized; exiting method")
-        return
+    # graph state should be uninitialized; if not, then clear it
+    graph.state = None
 
     # initialize t = -1, 0 states
     init = np.random.uniform(size=(1, len(graph.nodes)))
     graph.update_state(np.append(init, init, axis=0))
 
     laplacian = nx.laplacian_matrix(graph).toarray()
-
     relaxation = tqdm(range(n))
     relaxation.set_description('Relaxation: ')
-
-    # pdb.set_trace()
 
     for t in relaxation:
         # sum over all neighbors

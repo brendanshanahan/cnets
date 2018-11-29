@@ -29,9 +29,9 @@ class SmallWorldGraph(nx.Graph):
         return self._state
         # return self.nodes[node]['state']
 
-    # @state.setter
-    # def state(self, value):
-    #     self._state = value
+    @state.setter
+    def state(self, value):
+        self._state = value
 
     def update_state(self, value):
         if self._state is None:
