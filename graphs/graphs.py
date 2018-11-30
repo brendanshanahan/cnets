@@ -4,7 +4,7 @@ import numpy as np
 
 class SmallWorldGraph(nx.Graph):
     """
-    small-world network as defined by Watts, Strogatz (1998), Humphries, Gurney (2008)
+    Watts, Strogatz (1998), Humphries, Gurney (2008)
     """
 
     def __init__(self, n, k, p, connected=True):
@@ -21,13 +21,9 @@ class SmallWorldGraph(nx.Graph):
 
         self._state = None
 
-        # for node in self.nodes():
-        #     self.nodes[node]['state'] = []
-
     @property
     def state(self):
         return self._state
-        # return self.nodes[node]['state']
 
     @state.setter
     def state(self, value):
@@ -78,6 +74,7 @@ class ScaleFreeGraph(nx.Graph):
 
         for node in self.nodes():
             self.nodes[node]['state'] = []
+
 
 class GraphClone(nx.Graph):
 

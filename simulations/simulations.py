@@ -16,9 +16,29 @@ def relax(graph, node, laplacian, t):
 
 def draw_graph(graph):
     pos = nx.spring_layout(graph)
-    # weights = [graph[u][v]['weight'] for u, v in graph.edges]
-    nx.draw_networkx_edges(graph, pos, edges=graph.edges())
+    plt.figure(figsize=(20, 10))
+
+    # if edges are weighted, draw them
+    try:
+        weights = [graph[u][v]['weight'] for u, v in graph.edges]
+        nx.draw_networkx_edges(graph, pos, edges=graph.edges(), width=weights)
+    except KeyError:
+        nx.draw_networkx_edges(graph, pos, edges=graph.edges())
     nx.draw_networkx_nodes(graph, pos, node_size=20)
+    plt.show()
+
+
+def plot_fft(graph):
+
+    if graph.state is None:
+        print("Graph state not initialized")
+        return
+
+    fft = np.fft.fft(graph.state, axis=0)
+    ctr = (int)(len(fft)/2)
+    fft = abs(np.append(fft[ctr:, :], fft[:ctr, :], axis=0))
+    plt.figure(figsize=(20, 10))
+    plt.plot(fft)
     plt.show()
 
 
@@ -53,15 +73,11 @@ def wave_equation(graph, n, c=0.1):
 
 def fft_peaks(graph):
 
-    try:
-        assert graph.state is not None
-    except AssertionError:
+    if graph.state is None:
         print('Need graph relaxation information for fft')
         return
 
-    fft_relax = np.fft.fft(graph.state, axis=0)
-    # Get rid of 0 frequency value
-    fft_relax = fft_relax[1:]
+    fft_relax = np.fft.fft(graph.state, axis=0)[1:]  # ignore first index ~ 0 frequency value
 
     # Empty initial conditions
     pr_increasing_nodes = np.array(-1)
@@ -82,9 +98,8 @@ def fft_peaks(graph):
             # Saving peak values for later
             peak_value = fft_relax[maxcheck - 1, peaks]
             peaks_array[maxcheck - 1, peaks] = peak_value
-            try:
-                assert type(dict_peak[peaks]) is list
-            except KeyError:
+
+            if peaks not in dict_peak.keys():
                 dict_peak[peaks] = []
 
             if peak_value > 0:
