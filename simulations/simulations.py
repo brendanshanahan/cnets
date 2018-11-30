@@ -81,32 +81,52 @@ def fft_peaks(graph):
 
     # Empty initial conditions
     pr_increasing_nodes = np.array(-1)
+    pr_decreasing_nodes = np.array(-1)
     peaks_array = np.zeros_like(fft_relax)
 
-    dict_peak = {}
+    dict_peak = {
+            'Positive_Peaks': {},
+            'Negative_Peaks': {}
+        }
 
     for maxcheck in range(fft_relax.shape[0])[1:]:
+
+        # Positive Max Check
         # Array of t - 1 values
         prior_value = fft_relax[maxcheck - 1, :]
         current_value = fft_relax[maxcheck, :]
 
         # presently decreasing values
         decreasing_nodes = np.where(prior_value > current_value)[0]
-        peak_nodes = np.intersect1d(pr_increasing_nodes, decreasing_nodes)
+        peak_max_nodes = np.intersect1d(pr_increasing_nodes, decreasing_nodes)
 
-        for peaks in peak_nodes:
+        # Negative Min Check
+        # presently increasing values
+        increasing_nodes = np.where(prior_value < current_value)[0]
+        peak_min_nodes = np.intersect1d(pr_decreasing_nodes, increasing_nodes)
+
+        for peaks in peak_max_nodes:
             # Saving peak values for later
             peak_value = fft_relax[maxcheck - 1, peaks]
             peaks_array[maxcheck - 1, peaks] = peak_value
 
-            if peaks not in dict_peak.keys():
-                dict_peak[peaks] = []
+            if peaks not in dict_peak['Positive_Peaks'].keys():
+                if peak_value > 0:
+                    coeff = 1
+                    if peaks not in dict_peak['Negative_Peaks'].keys():
+                        dict_peak['Positive_Peaks'][peaks] = coeff
 
-            if peak_value > 0:
-                coeff = 1
-            else:
-                coeff = 0
-            dict_peak[peaks].append(coeff)
+        for peaks in peak_min_nodes:
+            peak_value = fft_relax[maxcheck - 1, peaks]
+            peaks_array[maxcheck - 1, peaks] = peak_value
 
-        pr_increasing_nodes = np.where(prior_value < current_value)[0]
-    return fft_relax, peaks_array, dict_peak
+            if peaks not in dict_peak['Negative_Peaks'].keys():
+                if peak_value < 0:
+                    coeff = 0
+                    if peaks not in dict_peak['Positive_Peaks'].keys():
+                        dict_peak['Negative_Peaks'][peaks] = coeff
+
+
+        pr_increasing_nodes = increasing_nodes
+        pr_decreasing_nodes = decreasing_nodes
+    return dict_peak
