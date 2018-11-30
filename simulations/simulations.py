@@ -107,8 +107,8 @@ def fft_peaks(graph):
 
         for peaks in peak_max_nodes:
             # Saving peak values for later
-            peak_value = fft_relax[maxcheck - 1, peaks]
-            peaks_array[maxcheck - 1, peaks] = peak_value
+            peak_value = fft_relax[maxcheck, peaks]
+            peaks_array[maxcheck, peaks] = peak_value
 
             if peaks not in dict_peak['Positive_Peaks'].keys():
                 if peak_value > 0:
@@ -117,8 +117,8 @@ def fft_peaks(graph):
                         dict_peak['Positive_Peaks'][peaks] = coeff
 
         for peaks in peak_min_nodes:
-            peak_value = fft_relax[maxcheck - 1, peaks]
-            peaks_array[maxcheck - 1, peaks] = peak_value
+            peak_value = fft_relax[maxcheck, peaks]
+            peaks_array[maxcheck, peaks] = peak_value
 
             if peaks not in dict_peak['Negative_Peaks'].keys():
                 if peak_value < 0:
@@ -130,3 +130,26 @@ def fft_peaks(graph):
         pr_increasing_nodes = increasing_nodes
         pr_decreasing_nodes = decreasing_nodes
     return dict_peak
+
+
+def highlight_clusters(graph, dict_input):
+    # Wil be changed to take dict from some state of graph for output
+
+    plt.figure(figsize=(20, 10))
+
+    cluster_A = list(dict_input['Positive_Peaks'].keys())
+    cluster_B = list(dict_input['Negative_Peaks'].keys())
+    pos = nx.spring_layout(graph)
+
+    nx.draw_networkx_nodes(graph, pos,
+                           nodelist=cluster_A,
+                           node_color='r',
+                           node_size=30)
+    nx.draw_networkx_nodes(graph, pos,
+                           nodelist=cluster_B,
+                           node_color='b',
+                           node_size=30)
+    nx.draw_networkx_edges(graph, pos)
+    plt.show()
+
+
