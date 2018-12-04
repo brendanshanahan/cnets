@@ -2,7 +2,26 @@ import networkx as nx
 import numpy as np
 
 
-class SmallWorldGraph(nx.Graph):
+class ParentGraph(nx.Graph):
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        self._state = value
+
+    def update_state(self, value):
+        if self._state is None:
+            self._state = value
+        else:
+            self._state = np.append(self._state, value, axis=0)
+
+    def neighbors_of(self, node):
+        return list(self[node].keys())
+
+
+class SmallWorldGraph(ParentGraph):
     """
     Watts, Strogatz (1998), Humphries, Gurney (2008)
     """
@@ -21,45 +40,26 @@ class SmallWorldGraph(nx.Graph):
 
         self._state = None
 
-    @property
-    def state(self):
-        return self._state
 
-    @state.setter
-    def state(self, value):
-        self._state = value
-
-    def update_state(self, value):
-        if self._state is None:
-            self._state = value
-        else:
-            self._state = np.append(self._state, value, axis=0)
-
-    def neighbors_of(self, node):
-        return list(self[node].keys())
-
-
-class ErdosReyniGraph(nx.Graph):
+class ErdosReyniGraph(ParentGraph):
     """
 
     """
 
     def __init__(self, n, p, seed=None, directed=False):
         """
-        :param n:
-        :param p:
-        :param seed:
-        :param directed:
+        :param n: (int) number of nodes
+        :param p: (float) probability of edge creation
+        :param seed: RNG state
+        :param directed: (bool) if True, return directed graph
         :return:
         """
 
         super().__init__(nx.fast_gnp_random_graph(n, p, seed, directed))
-
-        for node in self.nodes():
-            self.nodes[node]['state'] = []
+        self._state = None
 
 
-class ScaleFreeGraph(nx.Graph):
+class ScaleFreeGraph(ParentGraph):
     """
 
     """
@@ -71,31 +71,13 @@ class ScaleFreeGraph(nx.Graph):
         """
 
         super().__init__(nx.barabasi_albert_graph(n, m))
-
-        for node in self.nodes():
-            self.nodes[node]['state'] = []
-
-
-class GraphClone(nx.Graph):
-
-    def __init__(self, graph):
-        super().__init__(incoming_graph_data=graph)
-
         self._state = None
 
-    @property
-    def state(self):
-        return self._state
+class GraphClone(ParentGraph):
 
-    @state.setter
-    def state(self, value):
-        self._state = value
-
-    def update_state(self, value):
-        if self._state is None:
-            self._state = value
-        else:
-            self._state = np.append(self._state, value, axis=0)
-
-    def neighbors_of(self, node):
-        return list(self[node].keys())
+    def __init__(self, graph):
+        """
+        :param graph: nx.Graph constructor to clone from
+        """
+        super().__init__(incoming_graph_data=graph)
+        self._state = None

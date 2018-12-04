@@ -28,6 +28,27 @@ def draw_graph(graph):
     plt.show()
 
 
+def draw_partitions(graph, peaks):
+    # TODO: make this not stupid
+
+    positive_nodes = list(k for (k, v) in peaks.items() if v == 1)
+    negative_nodes = list(k for (k, v) in peaks.items() if v == 0)
+
+    pos = nx.bipartite_layout(graph, positive_nodes)
+    plt.figure(figsize=(20, 10))
+    
+    nx.draw_networkx_nodes(graph, pos,
+                           nodelist=positive_nodes,
+                           node_color='r',
+                           node_size=50)
+    nx.draw_networkx_nodes(graph, pos,
+                           nodelist=negative_nodes,
+                           node_color='b',
+                           node_size=50)
+    nx.draw_networkx_edges(graph, pos, edges=graph.edges())
+    plt.show()
+
+
 def plot_fft(graph):
 
     if graph.state is None:
@@ -84,16 +105,14 @@ def fft_peaks(graph):
     pr_decreasing_nodes = np.array(-1)
     peaks_array = np.zeros_like(fft_relax)
 
-    dict_peak = {
-            'Positive_Peaks': {},
-            'Negative_Peaks': {}
-        }
+    peaks = {}
 
-    for maxcheck in range(fft_relax.shape[0])[1:]:
+    # can this be made any simpler/easier to understand?
+    for maxcheck in range(1, fft_relax.shape[0]):
 
         # Positive Max Check
-        # Array of t - 1 values
-        prior_value = fft_relax[maxcheck - 1, :]
+        # Array of t-1 values
+        prior_value = fft_relax[maxcheck-1, :]
         current_value = fft_relax[maxcheck, :]
 
         # presently decreasing values
@@ -105,50 +124,44 @@ def fft_peaks(graph):
         increasing_nodes = np.where(prior_value < current_value)[0]
         peak_min_nodes = np.intersect1d(pr_decreasing_nodes, increasing_nodes)
 
-        for peaks in peak_max_nodes:
+        for node in peak_max_nodes:
             # Saving peak values for later
-            peak_value = fft_relax[maxcheck, peaks]
-            peaks_array[maxcheck, peaks] = peak_value
+            peak_value = fft_relax[maxcheck, node]
+            peaks_array[maxcheck, node] = peak_value
 
-            if peaks not in dict_peak['Positive_Peaks'].keys():
-                if peak_value > 0:
-                    coeff = 1
-                    if peaks not in dict_peak['Negative_Peaks'].keys():
-                        dict_peak['Positive_Peaks'][peaks] = coeff
+            if peak_value > 0 and (node not in peaks or peaks[node] is not 0):
+                    peaks[node] = 1
 
-        for peaks in peak_min_nodes:
-            peak_value = fft_relax[maxcheck, peaks]
-            peaks_array[maxcheck, peaks] = peak_value
+        for node in peak_min_nodes:
+            peak_value = fft_relax[maxcheck, node]
+            peaks_array[maxcheck, node] = peak_value
 
-            if peaks not in dict_peak['Negative_Peaks'].keys():
-                if peak_value < 0:
-                    coeff = 0
-                    if peaks not in dict_peak['Positive_Peaks'].keys():
-                        dict_peak['Negative_Peaks'][peaks] = coeff
-
+            if peak_value < 0 and (node not in peaks or peaks[node] is not 1):
+                    peaks[node] = 0
 
         pr_increasing_nodes = increasing_nodes
         pr_decreasing_nodes = decreasing_nodes
-    return dict_peak
+
+    return peaks
 
 
-def highlight_clusters(graph, dict_input):
-    # Wil be changed to take dict from some state of graph for output
+def highlight_clusters(graph, peaks):
+    # TODO: take dict from some state of graph for output
 
+    pos = nx.spring_layout(graph)
     plt.figure(figsize=(20, 10))
 
-    cluster_A = list(dict_input['Positive_Peaks'].keys())
-    cluster_B = list(dict_input['Negative_Peaks'].keys())
-    pos = nx.spring_layout(graph)
+    pos_cluster = list(k for (k, v) in peaks.items() if v == 1)
+    neg_cluster = list(k for (k, v) in peaks.items() if v == 0)
 
     nx.draw_networkx_nodes(graph, pos,
-                           nodelist=cluster_A,
+                           nodelist=pos_cluster,
                            node_color='r',
-                           node_size=30)
+                           node_size=50)
     nx.draw_networkx_nodes(graph, pos,
-                           nodelist=cluster_B,
+                           nodelist=neg_cluster,
                            node_color='b',
-                           node_size=30)
+                           node_size=50)
     nx.draw_networkx_edges(graph, pos)
     plt.show()
 
