@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class ParentGraph(nx.Graph):
@@ -19,6 +20,19 @@ class ParentGraph(nx.Graph):
 
     def neighbors_of(self, node):
         return list(self[node].keys())
+
+    def draw(self):
+        pos = nx.spring_layout(self)
+        plt.figure(figsize=(20, 10))
+
+        # if edges are weighted, draw them
+        try:
+            weights = [self[u][v]['weight'] for u, v in self.edges]
+            nx.draw_networkx_edges(self, pos, edges=self.edges(), width=weights)
+        except KeyError:
+            nx.draw_networkx_edges(self, pos, edges=self.edges())
+        nx.draw_networkx_nodes(self, pos, node_size=20)
+        plt.show()
 
 
 class SmallWorldGraph(ParentGraph):
@@ -72,6 +86,7 @@ class ScaleFreeGraph(ParentGraph):
 
         super().__init__(nx.barabasi_albert_graph(n, m))
         self._state = None
+
 
 class GraphClone(ParentGraph):
 

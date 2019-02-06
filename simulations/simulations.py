@@ -5,105 +5,64 @@ from graphs.graphs import *
 import matplotlib.pyplot as plt
 # import pdb
 
-class SimObject(object):
 
-    def __init__(self, graph_input):
-        # Will have graph_input take either single or list of graph objects (only single now)
-        if isinstance(graph_input, list):
-            raise KeyError('Need to make list input work')
-        else:
-            self.graph = graph_input
-            self.__wave_equation__(2000)
-            self.peaks = self.__fft_peaks__()
+class WaveEquationSimulation(object):
 
-
-
-    def relax(graph, node, laplacian, t):
-        neighbors = graph.neighbors_of(node)
-        sum = np.zeros(np.size(graph.nodes[node]['state']))
-
-        for i in neighbors:
-            sum += laplacian[i]
-
-    def draw_graph(self):
-        pos = nx.spring_layout(self.graph)
-        plt.figure(figsize=(20, 10))
-
-        # if edges are weighted, draw them
-        try:
-            weights = [self.graph[u][v]['weight'] for u, v in self.graph.edges]
-            nx.draw_networkx_edges(self.graph, pos, edges=self.graph.edges(), width=weights)
-        except KeyError:
-            nx.draw_networkx_edges(self.graph, pos, edges=self.graph.edges())
-        nx.draw_networkx_nodes(self.graph, pos, node_size=20)
-        plt.show()
-
-
-    def draw_partitions(self, graph):
-        # TODO: make this not stupid
-
-        positive_nodes = list(k for (k, v) in peaks.items() if v == 1)
-        negative_nodes = list(k for (k, v) in peaks.items() if v == 0)
-
-        pos = nx.bipartite_layout(graph, positive_nodes)
-        plt.figure(figsize=(20, 10))
-        
-        nx.draw_networkx_nodes(graph, pos,
-                               nodelist=positive_nodes,
-                               node_color='r',
-                               node_size=50)
-        nx.draw_networkx_nodes(graph, pos,
-                               nodelist=negative_nodes,
-                               node_color='b',
-                               node_size=50)
-        nx.draw_networkx_edges(graph, pos, edges=graph.edges())
-        plt.show()
-
-
-    def plot_fft(graph):
-
-        if graph.state is None:
-            print("Graph state not initialized")
-            return
-
-        fft = np.fft.fft(self.graph.state, axis=0)
-        ctr = (int)(len(fft)/2)
-        fft = abs(np.append(fft[ctr:, :], fft[:ctr, :], axis=0))
-        plt.figure(figsize=(20, 10))
-        plt.plot(fft)
-        plt.show()
-
-
-    def __wave_equation__(self, n, c=0.1):
+    def __init__(self):
+        """
+        initialize a simulation with no input arguments. simulations supersede graphs in a sense, i.e.
+        a simulation can act on multiple distinct graphs, but a graph has to be "reset" between simulations
         """
 
-        :param graph:
-        :param n:
-        :return:
+        self.graph = None
+        self.peaks = None
+        self.all_graphs = {}
+
+    def store_simulation_data(self, graph, **data):
+        """
+        once we run the simulation we (probably) don't need to keep a copy of the graph, so we can
+        collect whatever relevant data we're interested in and store just that
+
+        :param graph: graph instance which the simulation has already ran on
+        :param data: it probably makes sense to store all the data we want in a set
+        """
+
+        self.all_graphs[hash(graph)] = data
+
+    def run(self, graph, n=2000, c=0.1):
+        """
+        :param graph: not a networkx graph, but an instance of the wrapper class in graphs.py
+        :param n: number of wave equation time steps
+        :param c: wave speed
         """
 
         # graph state should be uninitialized; if not, then clear it
-        self.graph.state = None
+        graph.state = None
 
         # initialize t = -1, 0 states
-        init = np.random.uniform(size=(1, len(self.graph.nodes)))
-        self.graph.update_state(np.append(init, init, axis=0))
-        laplacian = nx.laplacian_matrix(self.graph).toarray()   
+        init = np.random.uniform(size=(1, len(graph.nodes)))
+        graph.update_state(np.append(init, init, axis=0))
+        laplacian = nx.laplacian_matrix(graph).toarray()
         relaxation = tqdm(range(n))
         relaxation.set_description('Relaxation: ')
 
         for t in relaxation:
             # sum over all neighbors
-            neighbors = np.dot((2 * np.identity(len(laplacian)) - (c**2) * laplacian), self.graph.state[t + 1])
+            neighbors = np.dot((2 * np.identity(len(laplacian)) - (c**2) * laplacian), graph.state[t + 1])
 
             # t-1, t-2
-            relaxation = - self.graph.state[t]
+            relaxation = graph.state[t]
 
-            self.graph.update_state([relaxation + neighbors])
+            graph.update_state([neighbors - relaxation])
 
+        # if a WaveEquationSimulation acts on a single graph at a time, then functions below like
+        # highlight_clusters, etc only make sense inside WaveEquationSimulation if it maintains a local copy of
+        # the current graph after running the simulation
 
-    def __fft_peaks__(self):
+        self.graph = graph
+        self.peaks = self.__fft_peaks()
 
+    def __fft_peaks(self):
         if self.graph.state is None:
             print('Need graph relaxation information for fft')
             return
@@ -154,7 +113,6 @@ class SimObject(object):
 
         return peaks
 
-
     def highlight_clusters(self):
         # TODO: take dict from some state of graph for output
 
@@ -173,6 +131,39 @@ class SimObject(object):
                                node_color='b',
                                node_size=50)
         nx.draw_networkx_edges(self.graph, pos)
+        plt.show()
+
+    def draw_partitions(self):
+        # TODO: make this not stupid
+
+        positive_nodes = list(k for (k, v) in self.peaks.items() if v == 1)
+        negative_nodes = list(k for (k, v) in self.peaks.items() if v == 0)
+
+        pos = nx.bipartite_layout(self.graph, positive_nodes)
+        plt.figure(figsize=(20, 10))
+
+        nx.draw_networkx_nodes(self.graph, pos,
+                               nodelist=positive_nodes,
+                               node_color='r',
+                               node_size=50)
+        nx.draw_networkx_nodes(self.graph, pos,
+                               nodelist=negative_nodes,
+                               node_color='b',
+                               node_size=50)
+        nx.draw_networkx_edges(self.graph, pos, edges=graph.edges())
+        plt.show()
+
+    def plot_fft(self):
+
+        if self.graph.state is None:
+            print("Graph state not initialized")
+            return
+
+        fft = np.fft.fft(self.graph.state, axis=0)
+        ctr = int(len(fft)/2)
+        fft = abs(np.append(fft[ctr:, :], fft[:ctr, :], axis=0))
+        plt.figure(figsize=(20, 10))
+        plt.plot(fft)
         plt.show()
 
 
