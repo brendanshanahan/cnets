@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class RootGraph:
+class ParentGraph:
 
     def __init__(self):
         self.state = None
@@ -39,11 +39,7 @@ class RootGraph:
         plt.show()
 
 
-class ParentGraph(nx.Graph, RootGraph):
-    pass
-
-
-class SmallWorldGraph(ParentGraph):
+class SmallWorldGraph(nx.Graph, ParentGraph):
     """
     Watts, Strogatz (1998), Humphries, Gurney (2008)
     """
@@ -61,10 +57,7 @@ class SmallWorldGraph(ParentGraph):
             super(SmallWorldGraph, self).__init__(nx.watts_strogatz_graph(n, k, p))
 
 
-class ErdosReyniGraph(ParentGraph):
-    """
-
-    """
+class ErdosReyniGraph(nx.Graph, ParentGraph):
 
     def __init__(self, n, p, seed=None, directed=False):
         """
@@ -78,10 +71,7 @@ class ErdosReyniGraph(ParentGraph):
         super(ErdosReyniGraph, self).__init__(nx.fast_gnp_random_graph(n, p, seed, directed))
 
 
-class ScaleFreeGraph(ParentGraph):
-    """
-
-    """
+class ScaleFreeGraph(nx.Graph, ParentGraph):
 
     def __init__(self, n, m=1):
         """
@@ -92,7 +82,7 @@ class ScaleFreeGraph(ParentGraph):
         super(ScaleFreeGraph, self).__init__(nx.barabasi_albert_graph(n, m))
 
 
-class GraphClone(ParentGraph):
+class GraphClone(nx.Graph, ParentGraph):
 
     def __init__(self, graph):
         """
