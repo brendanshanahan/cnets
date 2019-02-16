@@ -3,7 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class ParentGraph(nx.Graph):
+class RootGraph:
+
+    def __init__(self):
+        self.state = None
+
     @property
     def state(self):
         return self._state
@@ -35,6 +39,10 @@ class ParentGraph(nx.Graph):
         plt.show()
 
 
+class ParentGraph(nx.Graph, RootGraph):
+    pass
+
+
 class SmallWorldGraph(ParentGraph):
     """
     Watts, Strogatz (1998), Humphries, Gurney (2008)
@@ -48,11 +56,9 @@ class SmallWorldGraph(ParentGraph):
         :param connected: (bool) should the graph be connected?
         """
         if connected:
-            super().__init__(nx.connected_watts_strogatz_graph(n, k, p))
+            super(SmallWorldGraph, self).__init__(nx.connected_watts_strogatz_graph(n, k, p))
         else:
-            super().__init__(nx.watts_strogatz_graph(n, k, p))
-
-        self._state = None
+            super(SmallWorldGraph, self).__init__(nx.watts_strogatz_graph(n, k, p))
 
 
 class ErdosReyniGraph(ParentGraph):
@@ -69,8 +75,7 @@ class ErdosReyniGraph(ParentGraph):
         :return:
         """
 
-        super().__init__(nx.fast_gnp_random_graph(n, p, seed, directed))
-        self._state = None
+        super(ErdosReyniGraph, self).__init__(nx.fast_gnp_random_graph(n, p, seed, directed))
 
 
 class ScaleFreeGraph(ParentGraph):
@@ -84,8 +89,7 @@ class ScaleFreeGraph(ParentGraph):
         :param m: (int) number of edges that a new node attaches to existing nodes
         """
 
-        super().__init__(nx.barabasi_albert_graph(n, m))
-        self._state = None
+        super(ScaleFreeGraph, self).__init__(nx.barabasi_albert_graph(n, m))
 
 
 class GraphClone(ParentGraph):
@@ -94,5 +98,11 @@ class GraphClone(ParentGraph):
         """
         :param graph: nx.Graph constructor to clone from
         """
-        super().__init__(incoming_graph_data=graph)
-        self._state = None
+        super(GraphClone, self).__init__(incoming_graph_data=graph)
+
+
+class DirectedGraph(nx.DiGraph, ParentGraph):
+
+    def __init__(self):
+        super(DirectedGraph, self).__init__()
+
