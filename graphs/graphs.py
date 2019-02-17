@@ -88,11 +88,27 @@ class GraphClone(nx.Graph, ParentGraph):
         """
         :param graph: nx.Graph constructor to clone from
         """
-        super(GraphClone, self).__init__(incoming_graph_data=graph)
+        super().__init__(incoming_graph_data=graph)
 
 
-class DirectedGraph(nx.DiGraph, ParentGraph):
+class DiGraphClone(nx.DiGraph, ParentGraph):
+    def __init__(self, graph):
+        """
+        :param graph: Same use case as GraphClone, but with nx.DiGraph
+        constructor
+        """
+        super().__init__(incoming_graph_data=graph)
 
-    def __init__(self):
-        super(DirectedGraph, self).__init__()
+
+def genGraphClone(graph):
+    """
+    :param graph: graph to use for cloning, directed or underdirected
+
+    Returns Graph Clone object necessary for type of graph being utilized.
+    """
+    if graph.is_directed():
+        return DiGraphClone(graph)
+    else:
+        return GraphClone(graph)
+
 
