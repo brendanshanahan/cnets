@@ -82,17 +82,23 @@ class ScaleFreeGraph(nx.Graph, ParentGraph):
         super(ScaleFreeGraph, self).__init__(nx.barabasi_albert_graph(n, m))
 
 
-class GraphClone(nx.Graph, ParentGraph):
+def clone(graph):
+    return DirectedClone(graph) if graph.is_directed() else UndirectedClone(graph)
+
+
+class UndirectedClone(nx.Graph, ParentGraph):
 
     def __init__(self, graph):
         """
-        :param graph: nx.Graph constructor to clone from
+        :param graph: nx.Graph instance
         """
-        super(GraphClone, self).__init__(incoming_graph_data=graph)
+        super(UndirectedClone, self).__init__(incoming_graph_data=graph)
 
 
-class DirectedGraph(nx.DiGraph, ParentGraph):
+class DirectedClone(nx.DiGraph, ParentGraph):
 
-    def __init__(self):
-        super(DirectedGraph, self).__init__()
-
+    def __init__(self, graph):
+        """
+        :param graph: nx.DiGraph instance
+        """
+        super(DirectedClone, self).__init__(incoming_graph_data=graph)
