@@ -64,6 +64,13 @@ class WaveEquationSimulation(object):
 
         self.graph = graph
         self.peaks = self.__fft_peaks()
+        dummy_peaks = {}
+        mapping = sorted(self.graph.nodes)
+        for it, key in enumerate(sorted(self.peaks.keys())):
+            dummy_peaks[mapping[it]] = self.peaks[key]
+
+        self.peaks = dummy_peaks
+
 
     def __fft_peaks(self):
         if self.graph.state is None:
