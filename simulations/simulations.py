@@ -42,7 +42,10 @@ class WaveEquationSimulation(object):
         # initialize t = -1, 0 states
         init = np.random.uniform(size=(1, len(graph.nodes)))
         graph.update_state(np.append(init, init, axis=0))
-        laplacian = nx.laplacian_matrix(graph).toarray()
+        if graph.is_directed():
+            laplacian = np.asarray(nx.directed_laplacian_matrix(graph))
+        else:
+            laplacian = nx.laplacian_matrix(graph).toarray()
         relaxation = tqdm(range(n))
         relaxation.set_description('Relaxation: ')
 
@@ -61,6 +64,13 @@ class WaveEquationSimulation(object):
 
         self.graph = graph
         self.peaks = self.__fft_peaks()
+        dummy_peaks = {}
+        mapping = sorted(self.graph.nodes)
+        for it, key in enumerate(sorted(self.peaks.keys())):
+            dummy_peaks[mapping[it]] = self.peaks[key]
+
+        self.peaks = dummy_peaks
+
 
     def __fft_peaks(self):
         if self.graph.state is None:
@@ -152,7 +162,7 @@ class WaveEquationSimulation(object):
                                nodelist=negative_nodes,
                                node_color='b',
                                node_size=50)
-        nx.draw_networkx_edges(self.graph, pos, edges=graph.edges())
+        nx.draw_networkx_edges(self.graph, pos, edges=self.graph.edges())
         plt.show()
 
     def plot_fft(self):
