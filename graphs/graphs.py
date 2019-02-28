@@ -86,6 +86,9 @@ class GraphClone(nx.Graph, ParentGraph):
     def __init__(self, graph):
         """
         :param graph: nx.Graph instance
+
+        TODO: make this work with g.subgraph(...) - currently throwing an __init__() error because
+              it expects a graph as an input argument
         """
 
         super(GraphClone, self).__init__(incoming_graph_data=graph)
@@ -95,6 +98,9 @@ class DiGraphClone(nx.DiGraph, ParentGraph):
     def __init__(self, graph):
         """
         :param graph: nx.DiGraph instance
+
+        TODO: make this work with g.subgraph(...) - currently throwing an __init__() error because
+              it expects a graph as an input argument
         """
         super(DiGraphClone, self).__init__(incoming_graph_data=graph)
 

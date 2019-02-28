@@ -71,7 +71,6 @@ class WaveEquationSimulation(object):
 
         self.peaks = dummy_peaks
 
-
     def __fft_peaks(self):
         if self.graph.state is None:
             print('Need graph relaxation information for fft')
@@ -123,24 +122,49 @@ class WaveEquationSimulation(object):
 
         return peaks
 
+    def get_cut_nodes(self):
+        pos = list(int(k) for (k, v) in self.peaks.items() if v == 1)
+        neg = list(int(k) for (k, v) in self.peaks.items() if v == 0)
+
+        return pos, neg
+
+    def get_cut_edges(self):
+        pos, neg = self.get_cut_nodes()
+
+        # subset of edges connecting only nodes on either side of cut
+        # for edges in graph, for nodes in edge, if both nodes are pos or neg
+        pos_edges = [e for e in self.graph.edges if e[0] in pos and e[1] in pos]
+        neg_edges = [e for e in self.graph.edges if e[0] in neg and e[1] in neg]
+
+        # make new nx.(Di)Graph instances first, because (Di)GraphClone doesn't play
+        # well with g.subgraph(...)
+        if self.graph.is_directed():
+            part_1 = nx.DiGraph(pos_edges)
+            part_2 = nx.DiGraph(neg_edges)
+        else:
+            part_1 = nx.Graph(pos_edges)
+            part_2 = nx.Graph(neg_edges)
+
+        # return new (Di)GraphClone objects
+        return clone(part_1), clone(part_2)
+
     def highlight_clusters(self):
         # TODO: take dict from some state of graph for output
 
         pos = nx.spring_layout(self.graph)
         plt.figure(figsize=(20, 10))
 
-        pos_cluster = list(int(k) for (k, v) in self.peaks.items() if v == 1)
-        neg_cluster = list(int(k) for (k, v) in self.peaks.items() if v == 0)
+        pos_cluster, neg_cluster = self.get_cut_nodes()
         labels = {k: str(v) for (k, v) in self.peaks.items()}
 
         nx.draw_networkx_nodes(self.graph, pos,
                                nodelist=pos_cluster,
                                node_color='r',
-                               node_size=50)
+                               node_size=100)
         nx.draw_networkx_nodes(self.graph, pos,
                                nodelist=neg_cluster,
                                node_color='b',
-                               node_size=50)
+                               node_size=100)
         nx.draw_networkx_edges(self.graph, pos)
         nx.draw_networkx_labels(self.graph, pos, labels=labels)
         plt.show()
@@ -148,18 +172,17 @@ class WaveEquationSimulation(object):
     def draw_partitions(self):
         # TODO: make this not stupid
 
-        positive_nodes = list(k for (k, v) in self.peaks.items() if v == 1)
-        negative_nodes = list(k for (k, v) in self.peaks.items() if v == 0)
-
         pos = nx.bipartite_layout(self.graph, positive_nodes)
         plt.figure(figsize=(20, 10))
 
+        pos_nodes, neg_nodes = self.get_cut_nodes()
+
         nx.draw_networkx_nodes(self.graph, pos,
-                               nodelist=positive_nodes,
+                               nodelist=pos_nodes,
                                node_color='r',
                                node_size=50)
         nx.draw_networkx_nodes(self.graph, pos,
-                               nodelist=negative_nodes,
+                               nodelist=neg_nodes,
                                node_color='b',
                                node_size=50)
         nx.draw_networkx_edges(self.graph, pos, edges=self.graph.edges())
@@ -177,5 +200,7 @@ class WaveEquationSimulation(object):
         plt.figure(figsize=(20, 10))
         plt.plot(fft)
         plt.show()
+
+
 
 
