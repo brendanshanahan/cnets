@@ -119,8 +119,9 @@ class WaveEquationSimulation(object):
         pos = nx.spring_layout(self.graph)
         plt.figure(figsize=(20, 10))
 
-        pos_cluster = list(k for (k, v) in self.peaks.items() if v == 1)
-        neg_cluster = list(k for (k, v) in self.peaks.items() if v == 0)
+        pos_cluster = list(int(k) for (k, v) in self.peaks.items() if v == 1)
+        neg_cluster = list(int(k) for (k, v) in self.peaks.items() if v == 0)
+        labels = {k: str(v) for (k, v) in self.peaks.items()}
 
         nx.draw_networkx_nodes(self.graph, pos,
                                nodelist=pos_cluster,
@@ -131,6 +132,7 @@ class WaveEquationSimulation(object):
                                node_color='b',
                                node_size=50)
         nx.draw_networkx_edges(self.graph, pos)
+        nx.draw_networkx_labels(self.graph, pos, labels=labels)
         plt.show()
 
     def draw_partitions(self):

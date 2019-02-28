@@ -87,6 +87,7 @@ class GraphClone(nx.Graph, ParentGraph):
         """
         :param graph: nx.Graph instance
         """
+        super(GraphClone, self).__init__(incoming_graph_data=graph)
 
 
 class DiGraphClone(nx.DiGraph, ParentGraph):
@@ -94,7 +95,7 @@ class DiGraphClone(nx.DiGraph, ParentGraph):
         """
         :param graph: nx.DiGraph instance
         """
-        super().__init__(incoming_graph_data=graph)
+        super(DiGraphClone, self).__init__(incoming_graph_data=graph)
 
 
 def clone(graph):
