@@ -1,7 +1,9 @@
 """TBD."""
 from .simulations.simulations import *
 from pprint import pprint
-
+import pickle
+import os
+from pathlib import Path
 
 def gen_strong_graph(seed, init_size=10000, lower=100, upper=50):
     """TBA."""
@@ -29,27 +31,37 @@ def plot_from_dict(dict_in):
         plot_array = np.zeros(len(iterations.keys()))
         for key in iterations.keys():
             plot_array[int(key.strip('Iteration-')) - 1] = iterations[key]['Conductance']
-        plot_array
+        
+        spec_const = np.ones(len(iterations.keys())) * dict_in[seed]['Spectral Const.']
+        print(spec_const)
+        plt.semilogy(spec_const)
         plt.semilogy(plot_array)
         plt.show()
-
-
-
 
 if __name__ == '__main__':
     main_dict = {}
 
     seeds = [100, 215, 15]
+    filename = os.path.join('cnets', 'data', 'saved_data', 'main_dict.pickle')
 
-    for seed in seeds:
-        sim_obj = WaveEquationSimulation(store_dict=True)
-        input = nx.random_lobster(500, 0.3, 0.5, seed=seed)
-        # input = gen_strong_graph(seed)
-        graph_in = clone(input)
-        if graph_in is not None:
-            main_dict[str(seed)] = sim_obj.run(graph_in,
-                                               n=5000,
-                                               checkpoint_amount=25)
+    if not Path(filename).exists():
+        for seed in seeds:
+            sim_obj = WaveEquationSimulation(store_dict=True)
+            input = nx.random_lobster(500, 0.3, 0.5, seed=seed)
+            # input = gen_strong_graph(seed)
+            graph_in = clone(input)
+            if graph_in is not None:
+                main_dict[str(seed)] = sim_obj.run(graph_in,
+                                                   n=5000,
+                                                   checkpoint_amount=25)
+        with open(filename, 'wb') as handle:
+            pickle.dump(main_dict, handle, pickle.HIGHEST_PROTOCOL)
+        print('Saved Model')
+    else:
+        with open(filename, 'rb') as handle:
+            main_dict = pickle.load(handle)
 
-    pprint(main_dict)
+    
+
+    # pprint(main_dict)
     plot_from_dict(main_dict)

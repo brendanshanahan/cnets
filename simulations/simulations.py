@@ -41,7 +41,7 @@ class WaveEquationSimulation(object):
             # Main dictionary to be stored in class
             dict_store_graph_data = {
                 'Convergence': None,
-                'Spectral Const.': None,
+                'Spectral Const.': 0.001,
                 'Complete Search.': 'N/A  (For now)',
                 'Final Outcome': None
             }
