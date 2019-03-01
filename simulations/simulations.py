@@ -1,14 +1,14 @@
 import numpy as np
 import networkx as nx
 from tqdm import tqdm
-from graphs.graphs import *
+from ..graphs.graphs import *
 import matplotlib.pyplot as plt
 # import pdb
 
 
 class WaveEquationSimulation(object):
 
-    def __init__(self):
+    def __init__(self, store_dict=False):
         """
         initialize a simulation with no input arguments. simulations supersede graphs in a sense, i.e.
         a simulation can act on multiple distinct graphs, but a graph has to be "reset" between simulations
@@ -17,6 +17,7 @@ class WaveEquationSimulation(object):
         self.graph = None
         self.peaks = None
         self.all_graphs = {}
+        self.store_dict = store_dict
 
     def store_simulation_data(self, graph, **data):
         """
@@ -29,12 +30,25 @@ class WaveEquationSimulation(object):
 
         self.all_graphs[hash(graph)] = data
 
-    def run(self, graph, n=2000, c=0.1):
+    def run(self, graph, n=2000, c=0.1, checkpoint_amount=10):
         """
         :param graph: not a networkx graph, but an instance of the wrapper class in graphs.py
         :param n: number of wave equation time steps
         :param c: wave speed
         """
+
+        if self.store_dict:
+            # Main dictionary to be stored in class
+            dict_store_graph_data = {
+                'Convergence': None,
+                'Spectral Const.': None,
+                'Complete Search.': 'N/A  (For now)',
+                'Final Outcome': None
+            }
+        # Set up foundation for comparisons later
+
+        ## Spectral Clustering Values
+
 
         # graph state should be uninitialized; if not, then clear it
         graph.state = None
@@ -42,14 +56,18 @@ class WaveEquationSimulation(object):
         # initialize t = -1, 0 states
         init = np.random.uniform(size=(1, len(graph.nodes)))
         graph.update_state(np.append(init, init, axis=0))
+
         if graph.is_directed():
             laplacian = np.asarray(nx.directed_laplacian_matrix(graph))
         else:
             laplacian = nx.laplacian_matrix(graph).toarray()
-        relaxation = tqdm(range(n))
-        relaxation.set_description('Relaxation: ')
+        relaxation_it = tqdm(range(n))
+        relaxation_it.set_description('Starting ...')
 
-        for t in relaxation:
+        # Dictionary for all checkpoint values
+        checkpoint_dict = {}
+
+        for t in relaxation_it:
             # sum over all neighbors
             neighbors = np.dot((2 * np.identity(len(laplacian)) - (c**2) * laplacian), graph.state[t + 1])
 
@@ -58,19 +76,29 @@ class WaveEquationSimulation(object):
 
             graph.update_state([neighbors - relaxation])
 
+            # Checkpoint stopping at even intervals
+            if t % (n / checkpoint_amount) == 1:
+
+                # Update init graph state, update console output
+                self.graph = graph
+                checkpoint_count = int(t / (n / checkpoint_amount)) + 1
+                relaxation_it.set_description('Passing checkpoint ' + str(checkpoint_count) + ' / ' + str(checkpoint_amount))
+
+                checkpoint_key = '-'.join(['Iteration', str(checkpoint_count)])
+                checkpoint_dict[checkpoint_key] = self.__test_graph()
+
         # if a WaveEquationSimulation acts on a single graph at a time, then functions below like
         # highlight_clusters, etc only make sense inside WaveEquationSimulation if it maintains a local copy of
         # the current graph after running the simulation
 
         self.graph = graph
-        self.peaks = self.__fft_peaks()
-        dummy_peaks = {}
-        mapping = sorted(self.graph.nodes)
-        for it, key in enumerate(sorted(self.peaks.keys())):
-            dummy_peaks[mapping[it]] = self.peaks[key]
-
-        self.peaks = dummy_peaks
-
+        if self.store_dict:
+            dict_store_graph_data['Convergence'] = checkpoint_dict
+            dict_store_graph_data['Final Outcome'] = self.__test_graph()
+            return dict_store_graph_data
+        else:
+            self.peaks = self.__fft_peaks()
+            return
 
     def __fft_peaks(self):
         if self.graph.state is None:
@@ -120,12 +148,29 @@ class WaveEquationSimulation(object):
 
             pr_increasing_nodes = increasing_nodes
             pr_decreasing_nodes = decreasing_nodes
-
         return peaks
 
-    def highlight_clusters(self):
-        # TODO: take dict from some state of graph for output
+    def __test_graph(self):
+        assert self.graph.state is not None, "Graph state is not initialized"
 
+        checkpoint_cluster = self.__fft_peaks()
+
+        # Add more value later, just checking conductance now.
+        dict_save = {
+            'Conductance': self.__conductance(checkpoint_cluster)
+        }
+
+        return dict_save
+
+    def __conductance(self, peaks, cluster_size=2):
+        clusters = []
+
+        for it in range(cluster_size):
+            clusters.append([node for node in peaks.keys() if peaks[node] == it])
+        return nx.algorithms.cuts.conductance(self.graph, *clusters)
+
+    def highlight_clusters(self):
+        """TODO: take dict from some state of graph for output."""
         pos = nx.spring_layout(self.graph)
         plt.figure(figsize=(20, 10))
 
@@ -146,8 +191,7 @@ class WaveEquationSimulation(object):
         plt.show()
 
     def draw_partitions(self):
-        # TODO: make this not stupid
-
+        """TODO: make this not stupid."""
         positive_nodes = list(k for (k, v) in self.peaks.items() if v == 1)
         negative_nodes = list(k for (k, v) in self.peaks.items() if v == 0)
 
@@ -166,16 +210,13 @@ class WaveEquationSimulation(object):
         plt.show()
 
     def plot_fft(self):
-
         if self.graph.state is None:
             print("Graph state not initialized")
             return
 
         fft = np.fft.fft(self.graph.state, axis=0)
-        ctr = int(len(fft)/2)
+        ctr = int(len(fft) / 2)
         fft = abs(np.append(fft[ctr:, :], fft[:ctr, :], axis=0))
         plt.figure(figsize=(20, 10))
         plt.plot(fft)
         plt.show()
-
-
