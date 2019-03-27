@@ -5,7 +5,7 @@ import pickle
 import os
 from pathlib import Path
 
-def gen_strong_graph(seed, init_size=10000, lower=100, upper=50):
+def gen_strong_graph(seed, init_size=1000, lower=20, upper=50):
     """TBA."""
     graph = nx.scale_free_graph(init_size, seed=seed)
     strong_components = nx.algorithms.components.strongly_connected_components(graph)
@@ -34,17 +34,22 @@ def plot_from_dict(dict_in):
         
         spec_const = np.ones(len(iterations.keys())) * dict_in[seed]['Spectral Const.']
         print(spec_const)
-        plt.semilogy(spec_const)
-        plt.semilogy(plot_array)
+        # plt.semilogy(spec_const)
+        plt.plot(plot_array)
+        plt.figure()
+        plt.plot(dict_in[seed]['Debug'], 'k--')
         plt.show()
+
 
 if __name__ == '__main__':
     main_dict = {}
 
-    seeds = [100, 215, 15]
-    filename = os.path.join('cnets', 'data', 'saved_data', 'main_dict.pickle')
+    seeds = [100]
 
-    if not Path(filename).exists():
+    converg_t = 1000
+    filename = os.path.join('cnets', 'data', 'saved_data', 'main_dict.pickle')
+    overwrite = True
+    if not Path(filename).exists() or overwrite:
         for seed in seeds:
             sim_obj = WaveEquationSimulation(store_dict=True)
             input = nx.random_lobster(500, 0.3, 0.5, seed=seed)
@@ -52,8 +57,9 @@ if __name__ == '__main__':
             graph_in = clone(input)
             if graph_in is not None:
                 main_dict[str(seed)] = sim_obj.run(graph_in,
-                                                   n=5000,
-                                                   checkpoint_amount=25)
+                                                   n=converg_t,
+                                                   checkpoint_amount=20,
+                                                   c=0.5)
         with open(filename, 'wb') as handle:
             pickle.dump(main_dict, handle, pickle.HIGHEST_PROTOCOL)
         print('Saved Model')
@@ -65,3 +71,4 @@ if __name__ == '__main__':
 
     # pprint(main_dict)
     plot_from_dict(main_dict)
+    sim_obj.highlight_clusters()

@@ -3,7 +3,7 @@ import networkx as nx
 from tqdm import tqdm
 from ..graphs.graphs import *
 import matplotlib.pyplot as plt
-# import pdb
+import copy
 
 
 class WaveEquationSimulation(object):
@@ -36,14 +36,14 @@ class WaveEquationSimulation(object):
         :param n: number of wave equation time steps
         :param c: wave speed
         """
-
         if self.store_dict:
             # Main dictionary to be stored in class
             dict_store_graph_data = {
                 'Convergence': None,
                 'Spectral Const.': 0.001,
                 'Complete Search.': 'N/A  (For now)',
-                'Final Outcome': None
+                'Final Outcome': None,
+                'Debug': []
             }
         # Set up foundation for comparisons later
 
@@ -51,11 +51,11 @@ class WaveEquationSimulation(object):
 
 
         # graph state should be uninitialized; if not, then clear it
-        graph.state = None
+        graph.state = np.zeros((n+2, len(graph.nodes)))
 
         # initialize t = -1, 0 states
-        init = np.random.uniform(size=(1, len(graph.nodes)))
-        graph.update_state(np.append(init, init, axis=0))
+        init = np.random.uniform(size=(2, len(graph.nodes)))
+        graph.state[:2, :] = init
 
         if graph.is_directed():
             laplacian = np.asarray(nx.directed_laplacian_matrix(graph))
@@ -69,18 +69,26 @@ class WaveEquationSimulation(object):
 
         for t in relaxation_it:
             # sum over all neighbors
-            neighbors = np.dot((2 * np.identity(len(laplacian)) - (c**2) * laplacian), graph.state[t + 1])
+            neighbors = np.dot((2 * np.identity(len(laplacian)) - (c**2) * laplacian), graph.state[t + 1, :])
 
             # t-1, t-2
-            relaxation = graph.state[t]
+            relaxation = graph.state[t, :]
 
-            graph.update_state([neighbors - relaxation])
+            graph.state[t + 2, :] = neighbors - relaxation
 
             # Checkpoint stopping at even intervals
-            if t % (n / checkpoint_amount) == 1:
+            if (t+1) % int(n / checkpoint_amount) == 0:
 
                 # Update init graph state, update console output
-                self.graph = graph
+                self.graph = copy.deepcopy(graph)
+                self.graph.state = copy.deepcopy(graph.state[:t, :])
+                self.peaks =  self.__fft_peaks()
+                self.draw_partitions()
+
+                dict_store_graph_data['Debug'].append(len(self.__fft_peaks().keys()))
+                # self.peaks = self.__fft_peaks()
+                # self.draw_partitions()
+
                 checkpoint_count = int(t / (n / checkpoint_amount)) + 1
                 relaxation_it.set_description('Passing checkpoint ' + str(checkpoint_count) + ' / ' + str(checkpoint_amount))
 
@@ -92,6 +100,7 @@ class WaveEquationSimulation(object):
         # the current graph after running the simulation
 
         self.graph = graph
+        self.peaks = self.__fft_peaks()
         if self.store_dict:
             dict_store_graph_data['Convergence'] = checkpoint_dict
             dict_store_graph_data['Final Outcome'] = self.__test_graph()
@@ -155,25 +164,28 @@ class WaveEquationSimulation(object):
 
         checkpoint_cluster = self.__fft_peaks()
 
+
         # Add more value later, just checking conductance now.
         dict_save = {
             'Conductance': self.__conductance(checkpoint_cluster)
         }
-
+        # print(dict_save)
         return dict_save
 
     def __conductance(self, peaks, cluster_size=2):
         clusters = []
 
         for it in range(cluster_size):
-            clusters.append([node for node in peaks.keys() if peaks[node] == it])
+            empty = [node for node in peaks.keys() if peaks[node] == it]
+            if not empty:
+                return -1
+            clusters.append(empty)
         return nx.algorithms.cuts.conductance(self.graph, *clusters)
 
     def highlight_clusters(self):
         """TODO: take dict from some state of graph for output."""
         pos = nx.spring_layout(self.graph)
         plt.figure(figsize=(20, 10))
-
         pos_cluster = list(int(k) for (k, v) in self.peaks.items() if v == 1)
         neg_cluster = list(int(k) for (k, v) in self.peaks.items() if v == 0)
         labels = {k: str(v) for (k, v) in self.peaks.items()}
@@ -214,9 +226,9 @@ class WaveEquationSimulation(object):
             print("Graph state not initialized")
             return
 
-        fft = np.fft.fft(self.graph.state, axis=0)
+        fft = np.fft.fft(self.graph.state, axis=0)[1:]
         ctr = int(len(fft) / 2)
-        fft = abs(np.append(fft[ctr:, :], fft[:ctr, :], axis=0))
+        fft = np.append(fft[ctr:, :], fft[:ctr, :], axis=0)
         plt.figure(figsize=(20, 10))
         plt.plot(fft)
         plt.show()
