@@ -5,9 +5,9 @@ import pickle
 import os
 from pathlib import Path
 
-def gen_strong_graph(seed, init_size=50, lower=15, upper=100):
+def gen_strong_graph(seed, init_size=200, lower=15, upper=100):
     """TBA."""
-    graph = nx.erdos_renyi_graph(init_size, 0.1, seed=seed, directed=True)
+    graph = nx.erdos_renyi_graph(init_size, 0.01, seed=seed, directed=True)
     strong_components = nx.algorithms.components.strongly_connected_components(graph)
 
     # Select components based on thresholds of acceptance
@@ -23,8 +23,8 @@ def gen_strong_graph(seed, init_size=50, lower=15, upper=100):
         new_map = [n for n in range(len(old_map))]
         mapping = {old_map[x]: new_map[x] for x in range(len(new_map))}
         output = nx.relabel_nodes(un_org_graph, mapping)
-        # nx.draw(output)
-        # plt.show()
+        nx.draw(output)
+        plt.show()
         return output
 
 def plot_from_dict(dict_in):
@@ -47,8 +47,8 @@ if __name__ == '__main__':
     main_dict = {}
 
     seeds = [100]
-    check_amount = 0
-    converg_t = 10000
+    check_amount = 20
+    converg_t = 7000
     filename = os.path.join('cnets', 'data', 'saved_data', 'main_dict.pickle')
     overwrite = True
     if not Path(filename).exists() or overwrite:
@@ -61,7 +61,7 @@ if __name__ == '__main__':
                 main_dict[str(seed)] = sim_obj.run(graph_in,
                                                    n=converg_t,
                                                    checkpoint_amount=check_amount,
-                                                   c=0.2)
+                                                   c=0.3)
         with open(filename, 'wb') as handle:
             pickle.dump(main_dict, handle, pickle.HIGHEST_PROTOCOL)
         print('Saved Model')

@@ -52,7 +52,7 @@ class WaveEquationSimulation(object):
 
         # graph state should be uninitialized; if not, then clear it
         graph.state = np.zeros((n+2, len(graph.nodes)))
-        np.random.seed(10)
+        np.random.seed(18)
 
         # initialize t = -1, 0 states
         init = np.random.uniform(size=(2, len(graph.nodes)))
