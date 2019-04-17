@@ -52,13 +52,15 @@ class WaveEquationSimulation(object):
 
         # graph state should be uninitialized; if not, then clear it
         graph.state = np.zeros((n+2, len(graph.nodes)))
+        np.random.seed(10)
 
         # initialize t = -1, 0 states
         init = np.random.uniform(size=(2, len(graph.nodes)))
         graph.state[:2, :] = init
 
         if graph.is_directed():
-            laplacian = np.asarray(nx.directed_laplacian_matrix(graph))
+            laplacian = np.asarray(nx.directed_laplacian_matrix(graph,
+                                                                walk_type='lazy'))
         else:
             laplacian = nx.laplacian_matrix(graph).toarray()
         relaxation_it = tqdm(range(n))
@@ -77,23 +79,23 @@ class WaveEquationSimulation(object):
             graph.state[t + 2, :] = neighbors - relaxation
 
             # Checkpoint stopping at even intervals
-            if (t+1) % int(n / checkpoint_amount) == 0:
+            if checkpoint_amount !=0:
+                if (t+1) % int(n / checkpoint_amount) == 0:
 
-                # Update init graph state, update console output
-                self.graph = copy.deepcopy(graph)
-                self.graph.state = copy.deepcopy(graph.state[:t, :])
-                self.peaks =  self.__fft_peaks()
-                self.draw_partitions()
+                    # Update init graph state, update console output
+                    self.graph = copy.deepcopy(graph)
+                    self.graph.state = copy.deepcopy(graph.state[:t, :])
+                    self.peaks = self.__fft_peaks()
 
-                dict_store_graph_data['Debug'].append(len(self.__fft_peaks().keys()))
-                # self.peaks = self.__fft_peaks()
-                # self.draw_partitions()
+                    dict_store_graph_data['Debug'].append(len(self.__fft_peaks().keys()))
+                    # self.peaks = self.__fft_peaks()
+                    # self.highlight_clusters()
 
-                checkpoint_count = int(t / (n / checkpoint_amount)) + 1
-                relaxation_it.set_description('Passing checkpoint ' + str(checkpoint_count) + ' / ' + str(checkpoint_amount))
+                    checkpoint_count = int(t / (n / checkpoint_amount)) + 1
+                    relaxation_it.set_description('Passing checkpoint ' + str(checkpoint_count) + ' / ' + str(checkpoint_amount))
 
-                checkpoint_key = '-'.join(['Iteration', str(checkpoint_count)])
-                checkpoint_dict[checkpoint_key] = self.__test_graph()
+                    checkpoint_key = '-'.join(['Iteration', str(checkpoint_count)])
+                    checkpoint_dict[checkpoint_key] = self.__test_graph()
 
         # if a WaveEquationSimulation acts on a single graph at a time, then functions below like
         # highlight_clusters, etc only make sense inside WaveEquationSimulation if it maintains a local copy of
@@ -169,7 +171,7 @@ class WaveEquationSimulation(object):
         dict_save = {
             'Conductance': self.__conductance(checkpoint_cluster)
         }
-        # print(dict_save)
+        print(dict_save)
         return dict_save
 
     def __conductance(self, peaks, cluster_size=2):

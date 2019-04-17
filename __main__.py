@@ -5,9 +5,9 @@ import pickle
 import os
 from pathlib import Path
 
-def gen_strong_graph(seed, init_size=1000, lower=20, upper=50):
+def gen_strong_graph(seed, init_size=50, lower=15, upper=100):
     """TBA."""
-    graph = nx.scale_free_graph(init_size, seed=seed)
+    graph = nx.erdos_renyi_graph(init_size, 0.1, seed=seed, directed=True)
     strong_components = nx.algorithms.components.strongly_connected_components(graph)
 
     # Select components based on thresholds of acceptance
@@ -23,6 +23,8 @@ def gen_strong_graph(seed, init_size=1000, lower=20, upper=50):
         new_map = [n for n in range(len(old_map))]
         mapping = {old_map[x]: new_map[x] for x in range(len(new_map))}
         output = nx.relabel_nodes(un_org_graph, mapping)
+        # nx.draw(output)
+        # plt.show()
         return output
 
 def plot_from_dict(dict_in):
@@ -45,21 +47,21 @@ if __name__ == '__main__':
     main_dict = {}
 
     seeds = [100]
-
-    converg_t = 1000
+    check_amount = 0
+    converg_t = 10000
     filename = os.path.join('cnets', 'data', 'saved_data', 'main_dict.pickle')
     overwrite = True
     if not Path(filename).exists() or overwrite:
         for seed in seeds:
             sim_obj = WaveEquationSimulation(store_dict=True)
-            input = nx.random_lobster(500, 0.3, 0.5, seed=seed)
-            # input = gen_strong_graph(seed)
+            # input = nx.random_lobster(500, 0.3, 0.5, seed=seed)
+            input = gen_strong_graph(seed)
             graph_in = clone(input)
             if graph_in is not None:
                 main_dict[str(seed)] = sim_obj.run(graph_in,
                                                    n=converg_t,
-                                                   checkpoint_amount=20,
-                                                   c=0.5)
+                                                   checkpoint_amount=check_amount,
+                                                   c=0.2)
         with open(filename, 'wb') as handle:
             pickle.dump(main_dict, handle, pickle.HIGHEST_PROTOCOL)
         print('Saved Model')
@@ -72,3 +74,4 @@ if __name__ == '__main__':
     # pprint(main_dict)
     plot_from_dict(main_dict)
     sim_obj.highlight_clusters()
+    sim_obj.draw_partitions()
